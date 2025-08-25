@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuMind AI - Enterprise PDF Intelligence Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --dark-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --error: #f56565;
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* Glassmorphism Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: var(--glass-bg);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(25px);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-item {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-item:hover::before {
+            left: 100%;
+        }
+
+        .nav-item:hover {
+            background: var(--glass-bg);
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 300px;
+            height: calc(100vh - 80px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: var(--glass-bg);
+            border-right: 1px solid var(--glass-border);
+            z-index: 900;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-content {
+            padding: 2rem 1rem;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-title {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            padding-left: 0.5rem;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.2));
+            transition: width 0.3s ease;
+        }
+
+        .sidebar-item:hover::before {
+            width: 100%;
+        }
+
+        .sidebar-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .sidebar-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.75rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 300px;
+            margin-top: 80px;
+            padding: 2rem;
+            min-height: calc(100vh - 80px);
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-xl);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-zone:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-zone.dragover {
+            border-color: #48bb78;
+            background: rgba(72, 187, 120, 0.1);
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .upload-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.125rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .progress-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.875rem;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-size: 0.875rem;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(240, 147, 251, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(237, 137, 54, 0.3);
+        }
+
+        /* Results Display */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .result-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 0.5rem;
+        }
+
+        .result-content {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* Metrics Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+
+            .navbar {
+                padding: 0 1rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Search Results */
+        .search-result {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-result:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .search-result-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .search-result-page {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .search-result-content {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(20px);
+            z-index: 1100;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--error);
+        }
+
+        .notification.warning {
+            border-left: 4px solid var(--warning);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <svg class="sidebar-icon" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            DocuMind AI
+        </div>
+        <div class="nav-menu">
+            <a href="#" class="nav-item">Dashboard</a>
+            <a href="#" class="nav-item">Documents</a>
+            <a href="#" class="nav-item">Analytics</a>
+            <a href="#" class="nav-item">Settings</a>
+            <button id="sidebar-toggle" class="btn btn-primary">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Document Processing</div>
+                <a href="#upload-section" class="sidebar-item active" data-section="upload">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    Upload Documents
+                </a>
+                <a href="#summary-section" class="sidebar-item" data-section="summary">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    AI Summary
+                </a>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-title">Intelligence</div>
+                <a href="#search-section" class="sidebar-item" data-section="search">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Semantic Search
+                </a>
+                <a href="#qa-section" class="sidebar-item" data-section="qa">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Q&A Assistant
+                </a>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-title">Analytics</div>
+                <a href="#analytics-section" class="sidebar-item" data-section="analytics">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Document Analytics
+                </a>
+                <a href="#compare-section" class="sidebar-item" data-section="compare">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h2a2 2 0 002-2z"/>
+                    </svg>
+                    Compare Documents
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        
+        <!-- Upload Section -->
+        <section id="upload-section" class="glass-card fade-in">
+            <h2 class="card-title">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                Intelligent Document Upload
+            </h2>
+            <p class="card-subtitle">
+                Upload your PDF documents for AI-powered analysis and insights
+            </p>
+            
+            <div class="upload-zone" id="upload-zone">
+                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <div class="upload-text">Drag & Drop PDF files here</div>
+                <div class="upload-subtext">or click to browse your computer</div>
+                <div class="upload-subtext" style="margin-top: 0.5rem;">Maximum file size: 50MB</div>
+            </div>
+            
+            <input type="file" id="file-input" accept=".pdf" multiple style="display: none;">
+            
+            <div class="progress-container" id="upload-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="upload-status">Processing document...</span>
+                    <span id="upload-percentage">0%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary Section -->
+        <section id="summary-section" class="glass-card slide-up" style="display: none;">
+            <h2 class="card-title">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                AI-Powered Document Summary
+            </h2>
+            <p class="card-subtitle">
+                Generate intelligent summaries with customizable parameters
+            </p>
+
+            <div class="results-grid">
+                <div class="form-group">
+                    <label class="form-label">Summary Length</label>
+                    <select id="summary-type" class="form-control">
+                        <option value="short">Executive Brief (1-2 paragraphs)</option>
+                        <option value="medium" selected>Standard Summary (3-5 paragraphs)</option>
+                        <option value="detailed">Comprehensive Analysis (6+ paragraphs)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Writing Style</label>
+                    <select id="tone" class="form-control">
+                        <option value="executive">Executive Summary</option>
+                        <option value="technical">Technical Analysis</option>
+                        <option value="formal" selected>Professional</option>
+                        <option value="casual">Conversational</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="generate-summary" class="btn btn-primary">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Generate AI Summary
+            </button>
+
+            <div id="summary-results" class="results-grid" style="display: none;">
+                <div class="glass-card">
+                    <h3 class="card-title">Document Summary</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="confidence-score">--</div>
+                            <div class="metric-label">Confidence Score</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="reading-time">--</div>
+                            <div class="metric-label">Reading Time</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="word-count">--</div>
+                            <div class="metric-label">Word Count</div>
+                        </div>
+                    </div>
+                    
+                    <div id="summary-content" class="result-content"></div>
+                </div>
+
+                <div class="glass-card">
+                    <h3 class="card-title">Key Insights</h3>
+                    <div class="result-item">
+                        <div class="result-title">Key Points</div>
+                        <ul id="key-points" class="result-content"></ul>
+                    </div>
+                    
+                    <div class="result-item">
+                        <div class="result-title">Topics Identified</div>
+                        <div id="topics" class="result-content"></div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <div class="result-title">Named Entities</div>
+                        <div id="entities" class="result-content"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Section -->
+        <section id="search-section" class="glass-card slide-up" style="display: none;">
+            <h2 class="card-title">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                Semantic Document Search
+            </h2>
+            <p class="card-subtitle">
+                Find relevant information using natural language queries
+            </p>
+
+            <div class="form-group">
+                <input type="text" id="search-query" class="form-control" placeholder="Ask anything about your document...">
+            </div>
+            
+            <button id="search-btn" class="btn btn-secondary">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                Search Document
+            </button>
+
+            <div id="search-results" class="results-grid" style="display: none;"></div>
+        </section>
+
+        <!-- Q&A Section -->
+        <section id="qa-section" class="glass-card slide-up" style="display: none;">
+            <h2 class="card-title">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Intelligent Q&A Assistant
+            </h2>
+            <p class="card-subtitle">
+                Ask specific questions and get precise answers from your document
+            </p>
+
+            <div class="form-group">
+                <textarea id="qa-question" class="form-control" rows="3" placeholder="What would you like to know about this document?"></textarea>
+            </div>
+            
+            <button id="qa-btn" class="btn btn-accent">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Get Answer
+            </button>
+
+            <div id="qa-results" class="glass-card" style="display: none;">
+                <h3 class="card-title">AI Response</h3>
+                <div id="qa-answer" class="result-content"></div>
+                <div id="qa-sources" class="result-item" style="margin-top: 1rem;">
+                    <div class="result-title">Sources & References</div>
+                    <div class="result-content"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics-section" class="glass-card slide-up" style="display: none;">
+            <h2 class="card-title">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Advanced Document Analytics
+            </h2>
+            <p class="card-subtitle">
+                Deep insights and statistical analysis of your document
+            </p>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-pages">--</div>
+                    <div class="metric-label">Total Pages</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="total-words">--</div>
+                    <div class="metric-label">Total Words</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="readability-score">--</div>
+                    <div class="metric-label">Readability Score</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="complexity-level">--</div>
+                    <div class="metric-label">Complexity Level</div>
+                </div>
+            </div>
+
+            <div class="results-grid">
+                <div class="glass-card">
+                    <h3 class="card-title">Content Analysis</h3>
+                    <canvas id="content-chart" width="400" height="200"></canvas>
+                </div>
+                
+                <div class="glass-card">
+                    <h3 class="card-title">Topic Distribution</h3>
+                    <canvas id="topic-chart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Compare Section -->
+        <section id="compare-section" class="glass-card slide-up" style="display: none;">
+            <h2 class="card-title">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h2a2 2 0 002-2z"/>
+                </svg>
+                Document Comparison Engine
+            </h2>
+            <p class="card-subtitle">
+                Compare multiple documents to identify similarities and differences
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Document IDs (comma-separated)</label>
+                <input type="text" id="compare-file-ids" class="form-control" placeholder="doc1, doc2, doc3...">
+            </div>
+            
+            <button id="compare-btn" class="btn btn-warning">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h2a2 2 0 002-2z"/>
+                </svg>
+                Compare Documents
+            </button>
+
+            <div id="compare-results" class="glass-card" style="display: none;">
+                <h3 class="card-title">Comparison Analysis</h3>
+                <div id="comparison-content" class="result-content"></div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="similarity-score">--</div>
+                        <div class="metric-label">Similarity Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="common-topics">--</div>
+                        <div class="metric-label">Common Topics</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="unique-elements">--</div>
+                        <div class="metric-label">Unique Elements</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <div id="notification-message"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let uploadedFileId = null;
+        let currentSection = 'upload';
+        let scene, camera, renderer, particles;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initBackground();
+            initEventListeners();
+            initScrollEffects();
+        });
+
+        // Animated background
+        function initBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // Create particles
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 2000;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const material = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 2,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            camera.position.z = 1000;
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            particles.rotation.x += 0.0005;
+            particles.rotation.y += 0.0005;
+            
+            renderer.render(scene, camera);
+        }
+
+        // Event listeners
+        function initEventListeners() {
+            // Sidebar toggle
+            document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+
+            // Sidebar navigation
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = item.getAttribute('data-section');
+                    showSection(section);
+                    setActiveNavItem(item);
+                });
+            });
+
+            // Upload functionality
+            const uploadZone = document.getElementById('upload-zone');
+            const fileInput = document.getElementById('file-input');
+
+            uploadZone.addEventListener('click', () => fileInput.click());
+            uploadZone.addEventListener('dragover', handleDragOver);
+            uploadZone.addEventListener('dragleave', handleDragLeave);
+            uploadZone.addEventListener('drop', handleDrop);
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Summary
+            document.getElementById('generate-summary').addEventListener('click', generateSummary);
+
+            // Search
+            document.getElementById('search-btn').addEventListener('click', performSearch);
+            document.getElementById('search-query').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            // Q&A
+            document.getElementById('qa-btn').addEventListener('click', askQuestion);
+
+            // Compare
+            document.getElementById('compare-btn').addEventListener('click', compareDocuments);
+        }
+
+        function initScrollEffects() {
+            window.addEventListener('scroll', () => {
+                const navbar = document.querySelector('.navbar');
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            
+            sidebar.classList.toggle('hidden');
+            mainContent.classList.toggle('expanded');
+        }
+
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(`${sectionId}-section`);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                targetSection.classList.add('fade-in');
+            }
+            
+            currentSection = sectionId;
+        }
+
+        function setActiveNavItem(activeItem) {
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            activeItem.classList.add('active');
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notification-message');
+            
+            messageElement.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Upload handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFiles(files);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                processFiles(files);
+            }
+        }
+
+        async function processFiles(files) {
+            for (let file of files) {
+                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    showNotification('Only PDF files are supported', 'error');
+                    continue;
+                }
+                
+                if (file.size > 50 * 1024 * 1024) { // 50MB limit
+                    showNotification('File size exceeds 50MB limit', 'error');
+                    continue;
+                }
+
+                await uploadFile(file);
+            }
+        }
+
+        async function uploadFile(file) {
+            const progressContainer = document.getElementById('upload-progress');
+            const progressFill = document.getElementById('progress-fill');
+            const progressStatus = document.getElementById('upload-status');
+            const progressPercentage = document.getElementById('upload-percentage');
+
+            progressContainer.classList.add('visible');
+            progressStatus.textContent = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Simulate upload progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    
+                    progressFill.style.width = `${progress}%`;
+                    progressPercentage.textContent = `${Math.round(progress)}%`;
+                }, 200);
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const data = await response.json();
+                uploadedFileId = data.file_id;
+
+                // Complete progress
+                progressFill.style.width = '100%';
+                progressPercentage.textContent = '100%';
+                progressStatus.textContent = 'Upload complete! Processing document...';
+
+                showNotification('Document uploaded successfully!');
+                document.getElementById('summary-section').style.display = 'block';
+
+                // Auto-switch to summary section
+                setTimeout(() => {
+                    showSection('summary');
+                    setActiveNavItem(document.querySelector('[data-section="summary"]'));
+                }, 1000);
+
+            } catch (error) {
+                showNotification('Upload failed. Please try again.', 'error');
+                progressContainer.classList.remove('visible');
+            }
+        }
+
+        async function generateSummary() {
+            if (!uploadedFileId) {
+                showNotification('Please upload a document first', 'warning');
+                return;
+            }
+
+            const generateBtn = document.getElementById('generate-summary');
+            const originalText = generateBtn.innerHTML;
+            
+            generateBtn.innerHTML = '<div class="spinner"></div>Generating...';
+            generateBtn.disabled = true;
+
+            try {
+                const summaryType = document.getElementById('summary-type').value;
+                const tone = document.getElementById('tone').value;
+
+                const response = await fetch(`/summarize/${uploadedFileId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        summary_type: summaryType,
+                        tone: tone
+                    })
+                });
+
+                if (!response.ok) throw new Error('Summary generation failed');
+
+                const result = await response.json();
+                displaySummaryResults(result.summary);
+                
+                document.getElementById('summary-results').style.display = 'block';
+                showNotification('Summary generated successfully!');
+
+            } catch (error) {
+                showNotification('Failed to generate summary', 'error');
+            } finally {
+                generateBtn.innerHTML = originalText;
+                generateBtn.disabled = false;
+            }
+        }
+
+        function displaySummaryResults(summary) {
+            // Update metrics
+            document.getElementById('confidence-score').textContent = `${(summary.confidence_score * 100).toFixed(1)}%`;
+            document.getElementById('reading-time').textContent = `${Math.ceil(summary.content.split(' ').length / 200)} min`;
+            document.getElementById('word-count').textContent = summary.content.split(' ').length.toLocaleString();
+
+            // Update content
+            document.getElementById('summary-content').textContent = summary.content;
+
+            // Update key points
+            const keyPointsList = document.getElementById('key-points');
+            keyPointsList.innerHTML = '';
+            summary.key_points.forEach(point => {
+                const li = document.createElement('li');
+                li.textContent = point;
+                li.style.marginBottom = '0.5rem';
+                keyPointsList.appendChild(li);
+            });
+
+            // Update topics
+            const topicsContainer = document.getElementById('topics');
+            topicsContainer.innerHTML = '';
+            summary.topics.forEach(topic => {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.textContent = topic;
+                topicsContainer.appendChild(tag);
+            });
+
+            // Update entities
+            const entitiesContainer = document.getElementById('entities');
+            entitiesContainer.innerHTML = '';
+            summary.entities.forEach(entity => {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.textContent = entity;
+                entitiesContainer.appendChild(tag);
+            });
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('search-query').value.trim();
+            
+            if (!query) {
+                showNotification('Please enter a search query', 'warning');
+                return;
+            }
+
+            if (!uploadedFileId) {
+                showNotification('Please upload a document first', 'warning');
+                return;
+            }
+
+            const searchBtn = document.getElementById('search-btn');
+            const originalText = searchBtn.innerHTML;
+            
+            searchBtn.innerHTML = '<div class="spinner"></div>Searching...';
+            searchBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/search/${uploadedFileId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        top_k: 5
+                    })
+                });
+
+                if (!response.ok) throw new Error('Search failed');
+
+                const data = await response.json();
+                displaySearchResults(data.results);
+                
+                document.getElementById('search-results').style.display = 'block';
+
+            } catch (error) {
+                showNotification('Search failed. Please try again.', 'error');
+            } finally {
+                searchBtn.innerHTML = originalText;
+                searchBtn.disabled = false;
+            }
+        }
+
+        function displaySearchResults(results) {
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div class="result-item"><div class="result-content">No results found for your query.</div></div>';
+                return;
+            }
+
+            results.forEach((result, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result fade-in';
+                resultDiv.style.animationDelay = `${index * 0.1}s`;
+                
+                resultDiv.innerHTML = `
+                    <div class="search-result-header">
+                        <span class="search-result-page">Page ${result.page_number}</span>
+                        <span style="color: rgba(255, 255, 255, 0.6); font-size: 0.875rem;">
+                            Relevance: ${(result.similarity * 100).toFixed(1)}%
+                        </span>
+                    </div>
+                    <div class="search-result-content">${result.content}</div>
+                `;
+                
+                resultsContainer.appendChild(resultDiv);
+            });
+        }
+
+        async function askQuestion() {
+            const question = document.getElementById('qa-question').value.trim();
+            
+            if (!question) {
+                showNotification('Please enter a question', 'warning');
+                return;
+            }
+
+            if (!uploadedFileId) {
+                showNotification('Please upload a document first', 'warning');
+                return;
+            }
+
+            const qaBtn = document.getElementById('qa-btn');
+            const originalText = qaBtn.innerHTML;
+            
+            qaBtn.innerHTML = '<div class="spinner"></div>Processing...';
+            qaBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/qa/${uploadedFileId}?question=${encodeURIComponent(question)}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Q&A failed');
+
+                const data = await response.json();
+                displayQAResults(data);
+                
+                document.getElementById('qa-results').style.display = 'block';
+
+            } catch (error) {
+                showNotification('Failed to get answer. Please try again.', 'error');
+            } finally {
+                qaBtn.innerHTML = originalText;
+                qaBtn.disabled = false;
+            }
+        }
+
+        function displayQAResults(data) {
+            document.getElementById('qa-answer').textContent = data.answer;
+            
+            const sourcesContainer = document.querySelector('#qa-sources .result-content');
+            sourcesContainer.innerHTML = '';
+            
+            if (data.sources && data.sources.length > 0) {
+                data.sources.forEach(source => {
+                    const sourceDiv = document.createElement('div');
+                    sourceDiv.className = 'tag';
+                    sourceDiv.textContent = `Page ${source.page} (${(source.similarity * 100).toFixed(1)}% relevant)`;
+                    sourceDiv.style.display = 'block';
+                    sourceDiv.style.marginBottom = '0.5rem';
+                    sourcesContainer.appendChild(sourceDiv);
+                });
+            } else {
+                sourcesContainer.textContent = 'No specific sources identified.';
+            }
+        }
+
+        async function compareDocuments() {
+            const idsInput = document.getElementById('compare-file-ids').value.trim();
+            const fileIds = idsInput.split(',').map(id => id.trim()).filter(id => id);
+            
+            if (fileIds.length < 2) {
+                showNotification('Please enter at least 2 document IDs', 'warning');
+                return;
+            }
+
+            const compareBtn = document.getElementById('compare-btn');
+            const originalText = compareBtn.innerHTML;
+            
+            compareBtn.innerHTML = '<div class="spinner"></div>Comparing...';
+            compareBtn.disabled = true;
+
+            try {
+                const response = await fetch('/compare', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_ids: fileIds })
+                });
+
+                if (!response.ok) throw new Error('Comparison failed');
+
+                const data = await response.json();
+                displayCompareResults(data);
+                
+                document.getElementById('compare-results').style.display = 'block';
+                showNotification('Document comparison completed!');
+
+            } catch (error) {
+                showNotification('Comparison failed. Please try again.', 'error');
+            } finally {
+                compareBtn.innerHTML = originalText;
+                compareBtn.disabled = false;
+            }
+        }
+
+        function displayCompareResults(data) {
+            document.getElementById('comparison-content').textContent = data.comparison_analysis;
+            
+            // Update comparison metrics
+            document.getElementById('similarity-score').textContent = `${(data.similarity_score * 100).toFixed(1)}%`;
+            document.getElementById('common-topics').textContent = data.common_topics || 'N/A';
+            document.getElementById('unique-elements').textContent = data.unique_elements || 'N/A';
+        }
+
+        // Analytics functions
+        function loadAnalytics() {
+            if (!uploadedFileId) return;
+
+            // Simulate analytics data
+            document.getElementById('total-pages').textContent = '24';
+            document.getElementById('total-words').textContent = '8,432';
+            document.getElementById('readability-score').textContent = '7.2';
+            document.getElementById('complexity-level').textContent = 'Medium';
+
+            // Create charts
+            createContentChart();
+            createTopicChart();
+        }
+
+        function createContentChart() {
+            const ctx = document.getElementById('content-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Introduction', 'Analysis', 'Conclusions', 'References'],
+                    datasets: [{
+                        label: 'Word Count',
+                        data: [1200, 4500, 2100, 632],
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(240, 147, 251, 0.8)',
+                            'rgba(245, 87, 108, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(102, 126, 234, 1)',
+                            'rgba(118, 75, 162, 1)',
+                            'rgba(240, 147, 251, 1)',
+                            'rgba(245, 87, 108, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTopicChart() {
+            const ctx = document.getElementById('topic-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Technology', 'Business', 'Analysis', 'Research', 'Strategy'],
+                    datasets: [{
+                        data: [30, 25, 20, 15, 10],
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(240, 147, 251, 0.8)',
+                            'rgba(245, 87, 108, 0.8)',
+                            'rgba(72, 187, 120, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(102, 126, 234, 1)',
+                            'rgba(118, 75, 162, 1)',
+                            'rgba(240, 147, 251, 1)',
+                            'rgba(245, 87, 108, 1)',
+                            'rgba(72, 187, 120, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Enhanced sidebar navigation with analytics loading
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(`${sectionId}-section`);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                targetSection.classList.add('fade-in');
+                
+                // Load analytics when analytics section is shown
+                if (sectionId === 'analytics') {
+                    setTimeout(loadAnalytics, 300);
+                }
+            }
+            
+            currentSection = sectionId;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'u':
+                        e.preventDefault();
+                        document.getElementById('file-input').click();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        document.getElementById('search-query').focus();
+                        break;
+                    case 'q':
+                        e.preventDefault();
+                        document.getElementById('qa-question').focus();
+                        break;
+                }
+            }
+        });
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            if (renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        // Service worker for offline capabilities (if needed)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(registrationError => console.log('SW registration failed'));
+            });
+        }
+
+        // Auto-save functionality for forms
+        function autoSaveForm() {
+            const forms = ['search-query', 'qa-question', 'compare-file-ids'];
+            forms.forEach(formId => {
+                const element = document.getElementById(formId);
+                if (element) {
+                    element.addEventListener('input', (e) => {
+                        sessionStorage.setItem(formId, e.target.value);
+                    });
+                    
+                    // Restore saved values
+                    const savedValue = sessionStorage.getItem(formId);
+                    if (savedValue) {
+                        element.value = savedValue;
+                    }
+                }
+            });
+        }
+
+        // Initialize auto-save after DOM is loaded
+        document.addEventListener('DOMContentLoaded', autoSaveForm);
+
+        // Accessibility improvements
+        function initAccessibility() {
+            // Focus management for modal-like behavior
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    // Close any open modals or reset focus
+                    const activeElement = document.activeElement;
+                    if (activeElement && activeElement.blur) {
+                        activeElement.blur();
+                    }
+                }
+            });
+
+            // ARIA live regions for dynamic content
+            const liveRegion = document.createElement('div');
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            liveRegion.className = 'sr-only';
+            liveRegion.id = 'live-region';
+            document.body.appendChild(liveRegion);
+        }
+
+        // Initialize accessibility features
+        document.addEventListener('DOMContentLoaded', initAccessibility);
+
+        // Performance monitoring
+        function trackPerformance() {
+            if ('performance' in window) {
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        const perfData = performance.getEntriesByType('navigation')[0];
+                        console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart);
+                    }, 0);
+                });
+            }
+        }
+
+        trackPerformance();
+
+        // Dark/Light mode toggle (bonus feature)
+        function initThemeToggle() {
+            const themeToggle = document.createElement('button');
+            themeToggle.innerHTML = '🌙';
+            themeToggle.className = 'btn btn-secondary';
+            themeToggle.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; width: 50px; height: 50px; border-radius: 50%; font-size: 1.5rem;';
+            
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+                themeToggle.innerHTML = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
+            });
+            
+            document.body.appendChild(themeToggle);
+        }
+
+        // Initialize theme toggle after DOM is loaded
+        document.addEventListener('DOMContentLoaded', initThemeToggle);
+
+    </script>
+
+    <!-- Additional CSS for screen reader accessibility -->
+    <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Dark theme variations */
+        body.dark-theme {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #4a5568 100%);
+        }
+
+        body.dark-theme .glass-card {
+            background: rgba(26, 32, 44, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-theme .navbar {
+            background: rgba(26, 32, 44, 0.95);
+        }
+
+        body.dark-theme .sidebar {
+            background: rgba(26, 32, 44, 0.95);
+        }
+
+        /* Improved mobile responsiveness */
+        @media (max-width: 640px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .glass-card {
+                padding: 1.5rem;
+            }
+            
+            .card-title {
+                font-size: 1.25rem;
+            }
+            
+            .upload-zone {
+                padding: 2rem 1rem;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        /* Loading states */
+        .loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Enhanced hover effects for better UX */
+        .form-control:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .sidebar-item:active {
+            transform: scale(0.98);
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Focus indicators for better accessibility */
+        .btn:focus,
+        .form-control:focus,
+        .sidebar-item:focus {
+            outline: 2px solid rgba(102, 126, 234, 0.8);
+            outline-offset: 2px;
+        }
+
+        /* Print styles */
+        @media print {
+            .navbar,
+            .sidebar,
+            .btn,
+            #bg-canvas {
+                display: none !important;
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                margin-top: 0 !important;
+            }
+            
+            .glass-card {
+                background: white !important;
+                color: black !important;
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+            }
+        }
+    </style>
+</body>
+</html>

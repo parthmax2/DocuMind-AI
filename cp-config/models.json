@@ -1,0 +1,40 @@
+
+{
+  "models": [
+    {
+      "name": "gemini-1.5-pro",
+      "type": "text-generation",
+      "config": {
+        "max_tokens": 4096,
+        "temperature": 0.3,
+        "top_p": 0.8,
+        "top_k": 40
+      },
+      "limits": {
+        "rpm": 60,
+        "tpm": 32000
+      }
+    },
+    {
+      "name": "gemini-1.5-pro-vision", 
+      "type": "multimodal",
+      "config": {
+        "max_tokens": 2048,
+        "temperature": 0.2
+      },
+      "limits": {
+        "rpm": 30,
+        "tpm": 16000
+      }
+    }
+  ],
+  "load_balancing": {
+    "strategy": "round_robin",
+    "health_check_interval": 30
+  },
+  "monitoring": {
+    "metrics_enabled": true,
+    "log_requests": true,
+    "performance_tracking": true
+  }
+}
