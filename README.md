@@ -93,7 +93,7 @@ Visit the live demo: [🤗 HuggingFace Spaces](https://huggingface.co/spaces/par
 
 ```bash
 # Clone the repository
-git clone https://github.com/parthmax/DocuMind-AI.git
+git clone https://github.com/parthmax2/DocuMind-AI.git
 cd DocuMind-AI
 
 # Configure environment
@@ -535,9 +535,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Getting Help
 - **Documentation**: Check our [docs/](docs/) directory
-- **Issues**: [GitHub Issues](https://github.com/parthmax/DocuMind-AI/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/parthmax/DocuMind-AI/discussions)
-- **Email**: support@documind-ai.com
+- **Issues**: [GitHub Issues](https://github.com/parthmax2/DocuMind-AI/issues)
+- **Discussions**: [GitHub Discussions](https://github.com2/parthmax/DocuMind-AI/discussions)
+- **Email**: pathaksaksham430@gmail.com
 
 ### FAQ
 
@@ -565,8 +565,8 @@ A: Our system achieves 91%+ confidence scores on most documents, with accuracy v
 
 <div align="center">
 
-**[⭐ Star this repo](https://github.com/parthmax/DocuMind-AI)** if you find it useful!
+**[⭐ Star this repo](https://github.com/parthmax2/DocuMind-AI)** if you find it useful!
 
-Made with ❤️ by [parthmax](https://github.com/parthmax)
+Made with ❤️ by [parthmax](https://github.com/parthmax2)
 
 </div>
